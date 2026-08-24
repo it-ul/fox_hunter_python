@@ -28,3 +28,10 @@
 
 ## Запуск
 `python main.py` — из папки fx_python.
+
+## Публикация (2026-08-24)
+- Собран .exe: `dist\FoxHunter.exe` (11,8 МБ, PyInstaller --onefile --windowed).
+- GitHub-репозиторий: https://github.com/it-ul/fox_hunter_python (публичный)
+- Release v1.0.0 с .exe:
+  https://github.com/it-ul/fox_hunter_python/releases/download/v1.0.0/FoxHunter.exe
+- Обновление: git push origin main (ветка main, теги через git push --tags).
