@@ -122,13 +122,11 @@ class FoxApp(tk.Tk):
         """Левая колонка: арт игры и кнопка «Правила игры» (правила — в окне)."""
         panel = tk.Frame(parent, bg=BG_CARD)
         panel.pack(side="left", fill="y", padx=(0, 12))
-        tk.Label(panel, text="Описание", bg=BG_CARD, fg=TEXT,
-                 font=("Segoe UI", 13, "bold")).pack(anchor="w", padx=16,
-                                                     pady=(14, 8))
         self.fox_art_photo = self._load_fox_art()
         if self.fox_art_photo is not None:
             tk.Label(panel, image=self.fox_art_photo, bg=BG_CARD,
-                     borderwidth=0, highlightthickness=0).pack(padx=16)
+                     borderwidth=0, highlightthickness=0).pack(padx=16,
+                                                               pady=(14, 0))
         self._rules_button = tk.Button(
             panel, text="Правила игры", bg=ACCENT, fg=ACCENT_FG,
             font=("Segoe UI", 10, "bold"), command=self._show_rules)
