@@ -71,7 +71,7 @@ def resource_path(*parts):
 class FoxApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("🦊 Охота на лис")
+        self.title("Охота на лис")
         self.configure(bg=BG_MAIN)
         self.resizable(False, False)
         self.game = FoxGame()
@@ -97,8 +97,8 @@ class FoxApp(tk.Tk):
             self.app_icon = None
 
     def _heading(self):
-        tk.Label(self, text="🦊 Охота на лис", bg=BG_MAIN, fg=TEXT,
-                 font=("Segoe UI", 20, "bold")).pack(pady=(14, 6))
+        tk.Label(self, text="Охота на лис", bg=BG_MAIN, fg=TEXT,
+                 font=("Segoe UI", 22, "bold")).pack(pady=(14, 6))
 
     def _build_layout(self):
         """SDI: три колонки — описание, игровое поле, управление и информация."""
