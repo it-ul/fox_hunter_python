@@ -18,6 +18,7 @@ from game import SAVE_FILE, FoxGame
 # --- Цвета (в духе веб-версии) ---
 BG_MAIN = "#1b3a2a"       # тёмно-зелёный фон окна
 BG_CARD = "#24402f"       # фон карточек
+PANEL_BG = "#1f3527"      # фон текстовых блоков (как протокол)
 TEXT = "#f5f0e1"          # основной текст
 TEXT_DIM = "#c9c2b0"      # приглушённый текст
 ACCENT = "#e8a33d"        # акцентные кнопки
@@ -118,16 +119,71 @@ class FoxApp(tk.Tk):
         self.board_area.pack(side="left", fill="both", expand=True)
 
     def _build_description(self, parent):
-        """Левая колонка главного окна: заголовок и правила игры."""
+        """Левая колонка: арт игры и кнопка «Правила игры» (правила — в окне)."""
         panel = tk.Frame(parent, bg=BG_CARD)
         panel.pack(side="left", fill="y", padx=(0, 12))
         tk.Label(panel, text="Описание", bg=BG_CARD, fg=TEXT,
                  font=("Segoe UI", 13, "bold")).pack(anchor="w", padx=16,
-                                                     pady=(14, 6))
-        tk.Label(panel, text=RULES_TEXT, bg=BG_CARD, fg=TEXT,
-                 font=("Segoe UI", 10), justify="left", wraplength=290).pack(
-                     anchor="w", padx=16, pady=(0, 16))
+                                                     pady=(14, 8))
+        self.fox_art_photo = self._load_fox_art()
+        if self.fox_art_photo is not None:
+            tk.Label(panel, image=self.fox_art_photo, bg=BG_CARD,
+                     borderwidth=0, highlightthickness=0).pack(padx=16)
+        self._rules_button = tk.Button(
+            panel, text="Правила игры", bg=ACCENT, fg=ACCENT_FG,
+            font=("Segoe UI", 10, "bold"), command=self._show_rules)
+        self._rules_button.pack(fill="x", padx=16, pady=(12, 16))
         self.desc_panel = panel
+
+    def _load_fox_art(self):
+        """Картинка для колонки описания (None, если файла нет)."""
+        path = resource_path("assets", "fox_art.png")
+        if not os.path.exists(path):
+            return None
+        try:
+            return tk.PhotoImage(file=path)
+        except tk.TclError:
+            return None
+
+    def _show_rules(self):
+        """Всплывающее окно с правилами игры."""
+        win = getattr(self, "_rules_win", None)
+        if win is not None and win.winfo_exists():
+            win.lift()
+            win.focus_set()
+            return
+        win = tk.Toplevel(self)
+        self._rules_win = win
+        win.title("Правила игры")
+        win.configure(bg=BG_CARD)
+        win.transient(self)
+        win.resizable(False, False)
+
+        tk.Label(win, text="Правила игры", bg=BG_CARD, fg=TEXT,
+                 font=("Segoe UI", 14, "bold")).pack(padx=20, pady=(14, 8))
+
+        frame = tk.Frame(win, bg=BG_CARD)
+        frame.pack(padx=20, pady=(0, 10))
+        scroll = tk.Scrollbar(frame, orient="vertical")
+        scroll.pack(side="right", fill="y")
+        box = tk.Text(frame, width=52, height=22, wrap="word",
+                      bg=PANEL_BG, fg=TEXT, font=("Segoe UI", 10),
+                      relief="flat", highlightthickness=0, padx=12, pady=10,
+                      yscrollcommand=scroll.set)
+        scroll.config(command=box.yview)
+        box.insert("1.0", RULES_TEXT)
+        box.config(state="disabled")
+        box.pack(side="left")
+
+        tk.Button(win, text="Закрыть", bg=ACCENT, fg=ACCENT_FG,
+                  font=("Segoe UI", 10, "bold"),
+                  command=win.destroy).pack(pady=(0, 16))
+
+        # Окно по центру главного
+        win.update_idletasks()
+        x = self.winfo_rootx() + (self.winfo_width() - win.winfo_width()) // 2
+        y = self.winfo_rooty() + (self.winfo_height() - win.winfo_height()) // 2
+        win.geometry(f"+{max(0, x)}+{max(0, y)}")
 
     def _clear_board(self):
         """Очищает область игры (поле или стартовый экран)."""
