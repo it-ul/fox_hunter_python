@@ -4,3 +4,4 @@ build/
 dist/
 .env
 savegame.json
+ToDo.md

@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('assets/fox.png', 'assets')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

@@ -150,5 +150,56 @@ class FoxGameTest(unittest.TestCase):
                 g.load(path)
 
 
+    def test_coord_label(self):
+        """Координаты клеток в шахматной нотации: буквы + цифры снизу вверх."""
+        self.assertEqual(gm.coord_label(8, 0, 0), "a8")   # левый верх
+        self.assertEqual(gm.coord_label(8, 7, 7), "h1")   # правый низ
+        self.assertEqual(gm.coord_label(8, 4, 4), "e4")
+        self.assertEqual(gm.coord_label(15, 14, 0), "a1")
+        self.assertEqual(gm.coord_label(15, 14, 14), "o1")
+        self.assertEqual(gm.coord_label(9, 0, 8), "i9")
+
+    def test_toggle_mark(self):
+        """ПКМ-пометка: переключается, только для закрытых клеток идущей игры."""
+        g = gm.FoxGame()
+        g.new_game(8, 5)
+        self.assertTrue(g.toggle_mark(0, 0))     # поставить
+        self.assertTrue(g.is_marked(0, 0))
+        self.assertTrue(g.toggle_mark(0, 0))     # снять
+        self.assertFalse(g.is_marked(0, 0))
+        self.assertFalse(g.toggle_mark(99, 99))  # вне поля
+        g.move(3, 3)                             # открытая клетка
+        self.assertFalse(g.toggle_mark(3, 3))
+        g.status = "win"                         # игра окончена
+        self.assertFalse(g.toggle_mark(1, 1))
+
+    def test_log_records_moves(self):
+        """Протокол ходов: координата, пеленг, лиса есть/нет."""
+        g = gm.FoxGame()
+        g.new_game(8, 2)
+        g.foxes = [(0, 0), (0, 1)]
+        g.move(0, 0)
+        g.move(1, 1)
+        self.assertEqual(len(g.log), 2)
+        self.assertEqual(g.log[0], (0, 0, 2, True))    # в (0,0) лиса, пеленг 2
+        self.assertEqual(g.log[1], (1, 1, 2, False))   # (1,1) не лиса, пеленг 2
+
+    def test_save_load_marks_and_log(self):
+        """Пометки и протокол сохраняются и восстанавливаются."""
+        g = gm.FoxGame()
+        g.new_game(8, 5)
+        g.foxes = [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)]
+        g.toggle_mark(7, 7)
+        g.move(0, 0)
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "s.json")
+            g.save(path)
+            g2 = gm.FoxGame()
+            g2.load(path)
+            self.assertEqual(g2.marks, g.marks)
+            self.assertEqual(g2.log, g.log)
+            self.assertTrue(g2.is_marked(7, 7))
+
+
 if __name__ == "__main__":
     unittest.main()

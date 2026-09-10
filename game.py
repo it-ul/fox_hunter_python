@@ -20,6 +20,16 @@ SAVE_FILE = "savegame.json"
 SAVE_VERSION = 1
 
 
+def coord_label(size, r, c):
+    """Координата клетки в шахматной нотации: буква колонки + цифра строки.
+
+    Колонки — латинские буквы слева направо (a, b, c, ...).
+    Строки — цифры снизу вверх: нижняя строка поля — 1, верхняя — size.
+    Пример для поля 8x8: левый верх — a8, правый низ — h1.
+    """
+    return f"{chr(ord('a') + c)}{size - r}"
+
+
 class FoxGame:
     """Состояние и правила игры «Охота на лис»."""
 
@@ -34,6 +44,8 @@ class FoxGame:
         self.found = 0           # найдено лис
         self.revealed = {}       # {(r, c): пеленг} — открытые клетки
         self.found_cells = set() # {(r, c)} — клетки с найденными лисами
+        self.marks = set()       # {(r, c)} — клетки, помеченные охотником (ПКМ)
+        self.log = []            # [(r, c, пеленг, лиса_есть), ...] — протокол ходов
         self.status = "playing"  # playing | win | lose
         self.message = None
 
@@ -79,8 +91,11 @@ class FoxGame:
 
         self.revealed[(r, c)] = self.bearing(r, c)
         self.moves += 1
+        is_fox = (r, c) in self.foxes
+        # Протокол ходов: координата, пеленг, лиса есть/нет
+        self.log.append((r, c, self.revealed[(r, c)], is_fox))
 
-        if (r, c) in self.foxes:
+        if is_fox:
             self.found_cells.add((r, c))
             self.found += 1
 
@@ -96,6 +111,31 @@ class FoxGame:
                 f"Найдено {self.found} из {len(self.foxes)} лис."
             )
         return True
+
+    # --- Ручные пометки клеток (ПКМ) -------------------------------------
+
+    def toggle_mark(self, r, c):
+        """Переключает пометку клетки охотником.
+
+        Пометка — визуальная (клетка красится серым, как при пеленге 0):
+        охотник считает, что там ничего нет, но ход туда сделать можно.
+        Пометки допустимы только для закрытых клеток идущей игры.
+        """
+        if self.status != "playing":
+            return False
+        if not (0 <= r < self.size and 0 <= c < self.size):
+            return False
+        if (r, c) in self.revealed:  # открытые клетки не помечаем
+            return False
+        if (r, c) in self.marks:
+            self.marks.discard((r, c))
+        else:
+            self.marks.add((r, c))
+        return True
+
+    def is_marked(self, r, c):
+        """Клетка помечена охотником вручную?"""
+        return (r, c) in self.marks
 
     # --- Серые линии -----------------------------------------------------
 
@@ -127,6 +167,8 @@ class FoxGame:
             "found": self.found,
             "revealed": {f"{r},{c}": b for (r, c), b in self.revealed.items()},
             "found_cells": [f"{r},{c}" for r, c in self.found_cells],
+            "marks": [f"{r},{c}" for r, c in self.marks],
+            "log": [list(entry) for entry in self.log],
             "status": self.status,
             "message": self.message,
         }
@@ -147,6 +189,11 @@ class FoxGame:
         game.found_cells = {
             tuple(map(int, key.split(","))) for key in data["found_cells"]
         }
+        # Поля marks/log добавлены позже — для старых файлов их может не быть
+        game.marks = {
+            tuple(map(int, key.split(","))) for key in data.get("marks", [])
+        }
+        game.log = [tuple(entry) for entry in data.get("log", [])]
         game.status = data["status"]
         game.message = data["message"]
         return game
