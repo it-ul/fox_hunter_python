@@ -36,6 +36,10 @@ LOSE_BG = "#c92a2a"
 # Курсор над клетками поля — «прицел» (перекрестие с кружком).
 CURSOR_TARGET = "target"
 
+# Задержка кадров анимированного арта в колонке описания.
+# В исходном GIF delay = 3 (единицы 1/100 с), т.е. ~30 мс на кадр.
+FOX_FRAME_MS = 30
+
 # Отступ под подписи координат (слева — цифры, снизу — буквы)
 COORD_MARGIN = 24
 
@@ -119,29 +123,59 @@ class FoxApp(tk.Tk):
         self.board_area.pack(side="left", fill="both", expand=True)
 
     def _build_description(self, parent):
-        """Левая колонка: арт игры и кнопка «Правила игры» (правила — в окне)."""
+        """Левая колонка: анимированный арт и кнопка «Правила игры»."""
         panel = tk.Frame(parent, bg=BG_CARD)
         panel.pack(side="left", fill="y", padx=(0, 12))
-        self.fox_art_photo = self._load_fox_art()
-        if self.fox_art_photo is not None:
-            tk.Label(panel, image=self.fox_art_photo, bg=BG_CARD,
-                     borderwidth=0, highlightthickness=0).pack(padx=16,
-                                                               pady=(14, 0))
+        self.fox_frames = self._load_fox_frames()
+        if self.fox_frames:
+            self._fox_label = tk.Label(panel, image=self.fox_frames[0],
+                                       bg=BG_CARD, borderwidth=0,
+                                       highlightthickness=0)
+            self._fox_label.pack(padx=16, pady=(14, 0))
+            if len(self.fox_frames) > 1:
+                self._fox_frame_i = 0
+                self.after(FOX_FRAME_MS, self._animate_fox)
         self._rules_button = tk.Button(
             panel, text="Правила игры", bg=ACCENT, fg=ACCENT_FG,
             font=("Segoe UI", 10, "bold"), command=self._show_rules)
         self._rules_button.pack(fill="x", padx=16, pady=(12, 16))
         self.desc_panel = panel
 
-    def _load_fox_art(self):
-        """Картинка для колонки описания (None, если файла нет)."""
+    def _load_fox_frames(self):
+        """Кадры арта для колонки описания (список PhotoImage) или None.
+
+        Сначала — раскадровка `assets/fox_anim/frame_*.gif` (анимация),
+        иначе — одиночный `assets/fox_art.png`.
+        """
+        anim_dir = resource_path("assets", "fox_anim")
+        if os.path.isdir(anim_dir):
+            names = sorted(f for f in os.listdir(anim_dir)
+                           if f.startswith("frame_") and f.endswith(".gif"))
+            frames = []
+            for name in names:
+                try:
+                    frames.append(
+                        tk.PhotoImage(file=os.path.join(anim_dir, name)))
+                except tk.TclError:
+                    pass
+            if frames:
+                return frames
         path = resource_path("assets", "fox_art.png")
-        if not os.path.exists(path):
-            return None
-        try:
-            return tk.PhotoImage(file=path)
-        except tk.TclError:
-            return None
+        if os.path.exists(path):
+            try:
+                return [tk.PhotoImage(file=path)]
+            except tk.TclError:
+                return None
+        return None
+
+    def _animate_fox(self):
+        """Листает кадры анимированного арта в колонке описания."""
+        frames = getattr(self, "fox_frames", None)
+        if not frames or len(frames) < 2:
+            return
+        self._fox_frame_i = (self._fox_frame_i + 1) % len(frames)
+        self._fox_label.configure(image=frames[self._fox_frame_i])
+        self.after(FOX_FRAME_MS, self._animate_fox)
 
     def _show_rules(self):
         """Всплывающее окно с правилами игры."""
